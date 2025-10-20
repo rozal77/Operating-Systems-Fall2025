@@ -1,0 +1,116 @@
+# Quash: A Simple Command-Line Shell
+
+## Project Overview
+Quash (Quick Shell) is a lightweight implementation of a command-line interface (CLI) shell designed to simulate key features of modern shells like `bash` and `sh`. The project focuses on understanding Unix-like system concepts such as process forking, signaling, I/O redirection, and environment variable management.
+
+This shell was implemented as part of an operating systems course assignment to develop a deeper understanding of how shells work internally, providing hands-on experience with system calls and process control.
+
+---
+
+## Features
+### **1. Built-in Commands**
+- **`cd <directory>`**: Changes the current working directory to the specified path.
+  - Implementation: Uses the `chdir()` system call to update the working directory.
+  - Example: `cd testDir1` changes the shell's current directory to `testDir1`.
+
+- **`pwd`**: Prints the shell's current working directory.
+  - Implementation: Uses the `getcwd()` function to retrieve the working directory.
+  - Example: `pwd` might output `/home/user/project`.
+
+- **`echo <message>`**: Prints a message or the value of an environment variable.
+  - Handles strings starting with `$` to retrieve and print environment variables.
+  - Example: `echo $PATH` outputs the system's `PATH` variable.
+
+- **`env`**: Prints environment variables or retrieves a specific one if provided.
+  - Example: `env PATH` outputs the `PATH` variable value.
+
+- **`setenv VAR=value`**: Sets an environment variable to a specified value.
+  - Implementation: Uses `setenv()` with `overwrite` set to `1`.
+  - Example: `setenv greeting=hello` creates or updates the `greeting` variable.
+
+- **`exit`**: Exits the shell program gracefully.
+
+---
+
+### **2. Process Management**
+- **Foreground Execution**: Commands execute normally in the foreground, blocking the shell until completion.
+- **Background Execution**: Commands with `&` at the end run in the background, allowing the shell to immediately return to the prompt.
+- **Timeout Management**: Processes running longer than 10 seconds in the foreground are terminated using `kill()`.
+
+---
+
+### **3. I/O Redirection**
+- **Input Redirection (`<`)**: Allows commands to read input from a file.
+  - Example: `cat < inputfile` reads the content of `inputfile` into the `cat` command.
+- **Output Redirection (`>`)**: Redirects command output to a file, overwriting it if it exists.
+  - Example: `ls > outputfile` writes the result of `ls` to `outputfile`.
+
+---
+
+### **4. Signal Handling**
+- The shell ignores `Ctrl+C` (SIGINT) while running, ensuring the parent process remains active.
+- Child processes inherit the default behavior and can be terminated with `Ctrl+C`.
+
+---
+
+## Design and Implementation
+### **Design Choices**
+1. **Dynamic Prompt**:
+   - Displays the current working directory dynamically using `getcwd()`.
+   - This provides the user with a clear context of their location within the file system.
+
+2. **Tokenization**:
+   - Uses `strtok()` to split the input command into tokens for parsing.
+   - This approach allows for flexible input parsing, including flags and arguments.
+
+3. **Built-in Commands**:
+   - Built-in commands like `cd`, `pwd`, and `echo` are handled directly in the main loop, reducing the overhead of forking a new process.
+
+4. **Process Forking**:
+   - External commands (e.g., `ls`, `cat`) are executed using `fork()` and `execvp()`. The parent process waits for the child to complete.
+
+5. **Timeout Management**:
+   - A separate child process monitors foreground processes and terminates them if they exceed 10 seconds.
+
+6. **Signal Handling**:
+   - Implemented using `signal()` to catch `SIGINT`. This prevents the shell from exiting unexpectedly but allows child processes to handle signals normally.
+
+---
+
+## Challenges and Solutions
+1. **Command Parsing**:
+   - Handling various combinations of input, including arguments and special characters, was challenging.
+   - **Solution**: Built a robust tokenization function that supports whitespace and special characters like `$` for environment variables.
+
+2. **Background Processes**:
+   - Ensuring proper handling of background processes while maintaining a responsive shell was a key challenge.
+   - **Solution**: Used flags to track background processes and avoid blocking the main shell prompt.
+
+3. **Signal Handling**:
+   - Preventing `Ctrl+C` from terminating the shell but allowing child processes to respect it was tricky.
+   - **Solution**: Used a custom signal handler for the shell and reset the default behavior for child processes.
+
+4. **Timeout Implementation**:
+   - Monitoring and terminating long-running processes required careful use of `fork()` and `kill()`.
+   - **Solution**: Forked a separate timer process for timeout management.
+
+---
+
+## Code Structure
+### **Main Components**
+- **Tokenization**: Splits user input into tokens for command parsing.
+- **Command Execution**: Identifies built-in commands or executes external ones.
+- **Signal Handling**: Manages `Ctrl+C` behavior.
+- **I/O Redirection**: Handles `<` and `>` in commands.
+
+### **Key Functions**
+- `terminate_pro(int time, int pid)`: Terminates a process exceeding the specified time limit.
+- `signal_handler(int signum)`: Handles `SIGINT` for the shell process.
+- `main()`: The main loop of the shell, which handles input, parsing, and execution.
+
+---
+
+## How to Build and Run
+1. **Build the Shell**:
+   ```bash
+   make
